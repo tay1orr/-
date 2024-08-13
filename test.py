@@ -13,6 +13,10 @@ if 'messages' not in st.session_state:
         {"role": "system", "content": "You are a helpful assistant."}
     ]
 
+# 처음 모델 이름을 포함할지 여부를 세션 상태에서 관리
+if 'include_model_name' not in st.session_state:
+    st.session_state['include_model_name'] = True
+
 def send_message():
     user_message = st.session_state.user_input
     if user_message:
@@ -22,15 +26,23 @@ def send_message():
         # OpenAI Chat API 호출
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4-turbo",  # 또는 "gpt-3.5-turbo"
-                messages=st.session_state['messages'],  # 대화 전체 히스토리를 전달
+                model="gpt-4-turbo",  # 모델 설정
+                messages=st.session_state['messages'],  # 전체 대화 히스토리 전달
                 max_tokens=512
             )
             # 어시스턴트의 응답을 추출
             assistant_message = response['choices'][0]['message']['content']
 
+            # 첫 번째 응답에만 모델 이름 포함
+            if st.session_state['include_model_name']:
+                model_used = response['model']
+                final_message = f"(모델: {model_used})\n{assistant_message}"
+                st.session_state['include_model_name'] = False  # 이후에는 모델 이름 제외
+            else:
+                final_message = assistant_message
+
             # 어시스턴트 응답을 세션 상태에 추가
-            st.session_state['messages'].append({"role": "assistant", "content": assistant_message})
+            st.session_state['messages'].append({"role": "assistant", "content": final_message})
         except Exception as e:
             st.error(f"API 호출 중 오류가 발생했습니다: {e}")
 
