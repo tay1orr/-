@@ -9,43 +9,28 @@ st.title("쉽게 배우는 AI 딥러닝 연수 GPT 240817-240818")
 
 # 세션 상태에서 'messages' 초기화
 if 'messages' not in st.session_state:
-    st.session_state['messages'] = []
-
-# 처음 모델 이름을 포함할지 여부를 세션 상태에서 관리
-if 'include_model_name' not in st.session_state:
-    st.session_state['include_model_name'] = True
+    st.session_state['messages'] = [
+        {"role": "system", "content": "You are a helpful assistant."}
+    ]
 
 def send_message():
     user_message = st.session_state.user_input
     if user_message:
-        # 사용자 메시지를 세션 상태에 추가
+        # 사용자 메시지를 세션 상태에 추가 (전체 대화 히스토리 유지)
         st.session_state['messages'].append({"role": "user", "content": user_message})
 
         # OpenAI Chat API 호출
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4-turbo",  # gpt-4-turbo 모델로 설정
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": user_message},
-                ],
-                max_tokens=1024  # 응답의 길이를 줄이기 위해 max_tokens 감소
+                model="gpt-4-turbo",  # 또는 "gpt-3.5-turbo"
+                messages=st.session_state['messages'],  # 대화 전체 히스토리를 전달
+                max_tokens=512
             )
             # 어시스턴트의 응답을 추출
             assistant_message = response['choices'][0]['message']['content']
 
-            # 사용된 모델 이름 확인
-            model_used = response['model']
-
-            # 첫 번째 응답에만 모델 이름 포함
-            if st.session_state['include_model_name']:
-                final_message = f"(모델: {model_used})\n{assistant_message}"
-                st.session_state['include_model_name'] = False  # 다음부터는 모델 이름 제외
-            else:
-                final_message = assistant_message
-
             # 어시스턴트 응답을 세션 상태에 추가
-            st.session_state['messages'].append({"role": "assistant", "content": final_message})
+            st.session_state['messages'].append({"role": "assistant", "content": assistant_message})
         except Exception as e:
             st.error(f"API 호출 중 오류가 발생했습니다: {e}")
 
