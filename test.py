@@ -29,7 +29,7 @@ def send_message():
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": user_message},
                 ],
-                max_tokens=1024  # 더 긴 응답을 허용하기 위해 max_tokens 증가
+                max_tokens=512  # 응답의 길이를 줄이기 위해 max_tokens 감소
             )
             # 어시스턴트의 응답을 추출
             assistant_message = response['choices'][0]['message']['content']
