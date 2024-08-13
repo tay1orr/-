@@ -28,7 +28,7 @@ def send_message():
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",  # 모델 설정
                 messages=st.session_state['messages'],  # 전체 대화 히스토리 전달
-                max_tokens=1024
+                max_tokens=1500
             )
             # 어시스턴트의 응답을 추출
             assistant_message = response['choices'][0]['message']['content']
