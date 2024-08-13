@@ -24,7 +24,7 @@ def send_message():
         # OpenAI Chat API 호출
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4o mini",  # gpt-4-turbo 모델로 설정
+                model="gpt-4-turbo",  # gpt-4-turbo 모델로 설정
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": user_message},
