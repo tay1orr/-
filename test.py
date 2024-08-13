@@ -1,6 +1,7 @@
 import streamlit as st
 import openai
 import streamlit.components.v1 as components
+import time
 
 # OpenAI API 키 설정
 openai.api_key = st.secrets["OPENAI_API_KEY"]
@@ -28,7 +29,7 @@ def send_message():
             response = openai.ChatCompletion.create(
                 model="gpt-4-turbo",  # 모델 설정
                 messages=st.session_state['messages'],  # 전체 대화 히스토리 전달
-                max_tokens=512
+                max_tokens=1024
             )
             # 어시스턴트의 응답을 추출
             assistant_message = response['choices'][0]['message']['content']
@@ -36,10 +37,12 @@ def send_message():
             # 첫 번째 응답에만 모델 이름 포함
             if st.session_state['include_model_name']:
                 model_used = response['model']
-                final_message = f"(모델: {model_used})\n{assistant_message}"
+                final_message = f"(모델: {model_used})\n"
                 st.session_state['include_model_name'] = False  # 이후에는 모델 이름 제외
             else:
-                final_message = assistant_message
+                final_message = ""
+
+            final_message += assistant_message
 
             # 어시스턴트 응답을 세션 상태에 추가
             st.session_state['messages'].append({"role": "assistant", "content": final_message})
@@ -65,7 +68,13 @@ for message in st.session_state['messages']:
             f"<div style='background-color: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 5px;'>Assistant:</div>",
             unsafe_allow_html=True
         )
-        st.markdown(message['content'])
+        # 실시간 타이핑 효과
+        message_placeholder = st.empty()
+        typed_text = ""
+        for char in message['content']:
+            typed_text += char
+            message_placeholder.markdown(f"{typed_text}")
+            time.sleep(0.03)  # 각 글자마다 지연시간 설정
     st.markdown("---")
 
 # 사용자 입력 받기 (항상 페이지 하단에 위치)
