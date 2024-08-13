@@ -20,18 +20,21 @@ def send_message():
         # OpenAI Chat API 호출
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4-turbo",
+                model="gpt-4-turbo",  # gpt-4-turbo 모델로 설정
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": user_message},
                 ],
-                max_tokens=150
+                max_tokens=1024  # 더 긴 응답을 허용하기 위해 max_tokens 증가
             )
             # 어시스턴트의 응답을 추출
             assistant_message = response['choices'][0]['message']['content']
 
-            # 어시스턴트 응답을 세션 상태에 추가
-            st.session_state['messages'].append({"role": "assistant", "content": assistant_message})
+            # 사용된 모델 이름 확인
+            model_used = response['model']
+
+            # 어시스턴트 응답을 세션 상태에 추가, 사용된 모델 이름 포함
+            st.session_state['messages'].append({"role": "assistant", "content": f"(모델: {model_used})\n{assistant_message}"})
         except Exception as e:
             st.error(f"API 호출 중 오류가 발생했습니다: {e}")
 
@@ -45,13 +48,13 @@ def send_message():
 for message in st.session_state['messages']:
     if message['role'] == 'user':
         st.markdown(
-            f"<div style='background-color: #d1e7dd; padding: 10px; border-radius: 5px;'>User:</div>",
+            f"<div style='background-color: #d1e7dd; padding: 10px; border-radius: 5px; margin-bottom: 5px;'>User:</div>",
             unsafe_allow_html=True
         )
         st.code(message['content'], language="python")
     else:
         st.markdown(
-            f"<div style='background-color: #f8d7da; padding: 10px; border-radius: 5px;'>Assistant:</div>",
+            f"<div style='background-color: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 5px;'>Assistant:</div>",
             unsafe_allow_html=True
         )
         st.markdown(message['content'])
@@ -71,4 +74,4 @@ if 'scroll_to_bottom' in st.session_state:
     components.html(scroll_script)
 
     # 스크롤 후 상태를 초기화
-    del st.session_state['scroll_to_bottom']
+    st.session_state['scroll_to_bottom'] = False
