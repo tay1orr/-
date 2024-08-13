@@ -11,6 +11,10 @@ st.title("쉽게 배우는 AI 딥러닝 연수 GPT 240817-240818")
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 
+# 처음 모델 이름을 포함할지 여부를 세션 상태에서 관리
+if 'include_model_name' not in st.session_state:
+    st.session_state['include_model_name'] = True
+
 def send_message():
     user_message = st.session_state.user_input
     if user_message:
@@ -33,8 +37,15 @@ def send_message():
             # 사용된 모델 이름 확인
             model_used = response['model']
 
-            # 어시스턴트 응답을 세션 상태에 추가, 사용된 모델 이름 포함
-            st.session_state['messages'].append({"role": "assistant", "content": f"(모델: {model_used})\n{assistant_message}"})
+            # 첫 번째 응답에만 모델 이름 포함
+            if st.session_state['include_model_name']:
+                final_message = f"(모델: {model_used})\n{assistant_message}"
+                st.session_state['include_model_name'] = False  # 다음부터는 모델 이름 제외
+            else:
+                final_message = assistant_message
+
+            # 어시스턴트 응답을 세션 상태에 추가
+            st.session_state['messages'].append({"role": "assistant", "content": final_message})
         except Exception as e:
             st.error(f"API 호출 중 오류가 발생했습니다: {e}")
 
