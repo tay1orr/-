@@ -24,12 +24,12 @@ def send_message():
         # OpenAI Chat API 호출
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4-turbo",  # gpt-4-turbo 모델로 설정
+                model="gpt-4o mini",  # gpt-4-turbo 모델로 설정
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": user_message},
                 ],
-                max_tokens=512  # 응답의 길이를 줄이기 위해 max_tokens 감소
+                max_tokens=1024  # 응답의 길이를 줄이기 위해 max_tokens 감소
             )
             # 어시스턴트의 응답을 추출
             assistant_message = response['choices'][0]['message']['content']
