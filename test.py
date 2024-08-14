@@ -26,7 +26,7 @@ def send_message():
         # OpenAI Chat API 호출
         try:
             response = openai.ChatCompletion.create(
-                model="GPT-4o mini",  # 모델 설정
+                model="GPT-3.5 Turbo",  # 모델 설정
                 messages=st.session_state['messages'],  # 전체 대화 히스토리 전달
                 max_tokens=2048
             )
