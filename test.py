@@ -1,6 +1,7 @@
 import streamlit as st
 import openai
 import streamlit.components.v1 as components
+import time
 
 # OpenAI API 키 설정
 openai.api_key = st.secrets["OPENAI_API_KEY"]
@@ -23,28 +24,30 @@ def send_message():
         # 사용자 메시지를 세션 상태에 추가 (전체 대화 히스토리 유지)
         st.session_state['messages'].append({"role": "user", "content": user_message})
 
-        # OpenAI Chat API 호출
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-4o-mini",  # 모델 설정
-                messages=st.session_state['messages'],  # 전체 대화 히스토리 전달
-                max_tokens=2048
-            )
-            # 어시스턴트의 응답을 추출
-            assistant_message = response['choices'][0]['message']['content']
+        # 로딩 메시지 표시
+        with st.spinner("모델이 응답을 생성 중입니다..."):
+            # OpenAI Chat API 호출
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-4o-mini",  # 모델 설정
+                    messages=st.session_state['messages'],  # 전체 대화 히스토리 전달
+                    max_tokens=2048  # 토큰 수 유지
+                )
+                # 어시스턴트의 응답을 추출
+                assistant_message = response['choices'][0]['message']['content']
 
-            # 첫 번째 응답에만 모델 이름 포함
-            if st.session_state['include_model_name']:
-                model_used = response['model']
-                final_message = f"(모델: {model_used})\n{assistant_message}"
-                st.session_state['include_model_name'] = False  # 이후에는 모델 이름 제외
-            else:
-                final_message = assistant_message
+                # 첫 번째 응답에만 모델 이름 포함
+                if st.session_state['include_model_name']:
+                    model_used = response['model']
+                    final_message = f"(모델: {model_used})\n{assistant_message}"
+                    st.session_state['include_model_name'] = False  # 이후에는 모델 이름 제외
+                else:
+                    final_message = assistant_message
 
-            # 어시스턴트 응답을 세션 상태에 추가
-            st.session_state['messages'].append({"role": "assistant", "content": final_message})
-        except Exception as e:
-            st.error(f"API 호출 중 오류가 발생했습니다: {e}")
+                # 어시스턴트 응답을 세션 상태에 추가
+                st.session_state['messages'].append({"role": "assistant", "content": final_message})
+            except Exception as e:
+                st.error(f"API 호출 중 오류가 발생했습니다: {e}")
 
         # 입력 필드를 초기화
         st.session_state.user_input = ""
@@ -65,6 +68,7 @@ for message in st.session_state['messages']:
             f"<div style='background-color: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 5px;'>Assistant:</div>",
             unsafe_allow_html=True
         )
+        # 응답 메시지 표시
         st.markdown(message['content'])
     st.markdown("---")
 
