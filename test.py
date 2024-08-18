@@ -1,53 +1,89 @@
 import streamlit as st
-import pandas as pd
+import openai
+import streamlit.components.v1 as components
+import time
 
-# 앱의 제목
-st.title("독서 진행 상황 기록 앱")
+# OpenAI API 키 설정
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-# 책 목록을 저장할 데이터프레임 초기화
-if 'books' not in st.session_state:
-    st.session_state.books = pd.DataFrame(columns=["책 이름", "읽음 여부"])
+st.title("쉽게 배우는 AI 딥러닝 연수 GPT 240817-240818")
 
-# 책 추가 기능
-def add_book(book_name):
-    new_book = pd.DataFrame({"책 이름": [book_name], "읽음 여부": [False]})
-    st.session_state.books = pd.concat([st.session_state.books, new_book], ignore_index=True)
+# 세션 상태에서 'messages' 초기화
+if 'messages' not in st.session_state:
+    st.session_state['messages'] = [
+        {"role": "system", "content": "You are a helpful assistant."}
+    ]
 
-# 책 삭제 기능
-def delete_book(book_name):
-    st.session_state.books = st.session_state.books[st.session_state.books["책 이름"] != book_name]
+# 처음 모델 이름을 포함할지 여부를 세션 상태에서 관리
+if 'include_model_name' not in st.session_state:
+    st.session_state['include_model_name'] = True
 
-# 책 읽음 상태 업데이트 기능
-def toggle_read_status(book_name):
-    st.session_state.books.loc[st.session_state.books['책 이름'] == book_name, '읽음 여부'] = \
-        not st.session_state.books.loc[st.session_state.books['책 이름'] == book_name, '읽음 여부'].values[0]
+def send_message():
+    user_message = st.session_state.user_input
+    if user_message:
+        # 사용자 메시지를 세션 상태에 추가 (전체 대화 히스토리 유지)
+        st.session_state['messages'].append({"role": "user", "content": user_message})
 
-# 책 추가 입력란
-book_name = st.text_input("책 이름을 입력하세요:")
-if st.button("책 추가"):
-    if book_name:
-        add_book(book_name)
-        st.success(f"'{book_name}'이 추가되었습니다.")
+        # 로딩 메시지 표시
+        with st.spinner("모델이 응답을 생성 중입니다..."):
+            # OpenAI Chat API 호출
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-4o-mini",  # 모델 설정
+                    messages=st.session_state['messages'],  # 전체 대화 히스토리 전달
+                    max_tokens=2048  # 토큰 수 유지
+                )
+                # 어시스턴트의 응답을 추출
+                assistant_message = response['choices'][0]['message']['content']
+
+                # 첫 번째 응답에만 모델 이름 포함
+                if st.session_state['include_model_name']:
+                    model_used = response['model']
+                    final_message = f"(모델: {model_used})\n{assistant_message}"
+                    st.session_state['include_model_name'] = False  # 이후에는 모델 이름 제외
+                else:
+                    final_message = assistant_message
+
+                # 어시스턴트 응답을 세션 상태에 추가
+                st.session_state['messages'].append({"role": "assistant", "content": final_message})
+            except Exception as e:
+                st.error(f"API 호출 중 오류가 발생했습니다: {e}")
+
+        # 입력 필드를 초기화
+        st.session_state.user_input = ""
+
+        # 스크롤을 맨 아래로 이동하도록 트리거하기 위해 빈 상태를 업데이트
+        st.session_state['scroll_to_bottom'] = True
+
+# 메시지를 출력하여 최신 메시지가 하단에 위치하도록 함
+for message in st.session_state['messages']:
+    if message['role'] == 'user':
+        st.markdown(
+            f"<div style='background-color: #d1e7dd; padding: 10px; border-radius: 5px; margin-bottom: 5px;'>User:</div>",
+            unsafe_allow_html=True
+        )
+        st.code(message['content'], language="python")
     else:
-        st.warning("책 이름을 입력해주세요.")
+        st.markdown(
+            f"<div style='background-color: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 5px;'>Assistant:</div>",
+            unsafe_allow_html=True
+        )
+        # 응답 메시지 표시
+        st.markdown(message['content'])
+    st.markdown("---")
 
-# 책 삭제 입력란
-book_name_to_delete = st.selectbox("삭제할 책을 선택하세요:", st.session_state.books["책 이름"].tolist() if not st.session_state.books.empty else [''])
-if st.button("책 삭제"):
-    if book_name_to_delete:
-        delete_book(book_name_to_delete)
-        st.success(f"'{book_name_to_delete}'이 삭제되었습니다.")
-    else:
-        st.warning("삭제할 책을 선택해주세요.")
+# 사용자 입력 받기 (항상 페이지 하단에 위치)
+st.text_input("User:", key="user_input", on_change=send_message)
 
-# 현재 책 목록 표시
-st.subheader("현재 독서 목록")
-for index, row in st.session_state.books.iterrows():
-    read_status = "읽음" if row["읽음 여부"] else "읽지 않음"
-    if st.checkbox(f"{row['책 이름']} ({read_status})", value=row["읽음 여부"], key=row['책 이름']):
-        toggle_read_status(row['책 이름'])
+# JavaScript를 사용하여 자동 스크롤
+if 'scroll_to_bottom' in st.session_state:
+    scroll_script = """
+    <script>
+    var chatContainer = window.parent.document.getElementsByClassName('main')[0];
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    </script>
+    """
+    components.html(scroll_script)
 
-# 앱 종료 시 상태 저장
-if st.button("상태 저장"):
-    st.session_state.books.to_csv("책_목록.csv", index=False)
-    st.success("상태가 저장되었습니다.")
+    # 스크롤 후 상태를 초기화
+    st.session_state['scroll_to_bottom'] = False
