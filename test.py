@@ -6,7 +6,7 @@ import time
 # OpenAI API 키 설정
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-st.title("쉽게 배우는 AI 딥러닝 연수 GPT 240817-240818")
+st.title("생성형 AI를 활용한 나만의 웹 앱 프로그래밍 241017")
 
 # 세션 상태에서 'messages' 초기화
 if 'messages' not in st.session_state:
